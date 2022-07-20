@@ -49,10 +49,6 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
 
     steps:
-      - name: Install curl SSL library
-        run: |
-          sudo apt-get update && sudo apt-get install libcurl4-openssl-dev
-
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout Repo
         uses: actions/checkout@v2
