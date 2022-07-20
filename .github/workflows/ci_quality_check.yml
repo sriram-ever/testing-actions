@@ -53,17 +53,17 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
 
-      # Run EsLint and Prettier check
-      # - uses: actions/setup-node@v3
-      #   with:
-      #     node-version: 16
-      #     cache: "npm"
-      #     cache-dependency-path: ./my-app/package-lock.json
-
-      - uses: actions/cache@v2
+      Run EsLint and Prettier check
+      - uses: actions/setup-node@v3
         with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
+          node-version: 16
+          cache: "npm"
+          cache-dependency-path: ./my-app/package-lock.json
+
+      # - uses: actions/cache@v2
+      #   with:
+      #     path: "**/node_modules"
+      #     key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install NPM
         working-directory: ./my-app
