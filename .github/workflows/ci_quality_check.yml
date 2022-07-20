@@ -8,26 +8,69 @@ name: CI - Run Code Quality Check
 # Controls when the workflow will run
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
   push:
-    branches: [master]
+    branches: [main]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  run_or_skip_workflow:
+    name: Check if workflow can run or not
+    runs-on: ubuntu-latest
+
+    # Map a step output to a job output
+    outputs:
+      run_workflow_flag: ${{ steps.run_workflow.outputs.result }}
+
+    steps:
+      - name: Check if PR label is 'skip-quality-check' on push action
+        id: is_label_skip_quality_check
+        uses: shioyang/check-pr-labels-on-push-action@v1.0.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          labels: '["skip-quality-check"]'
+
+      - name: Run run-workflow check
+        id: run_workflow
+        run: echo "::set-output name=result::${{ steps.is_label_skip_quality_check.outputs.result != 'true' }}"
+
   quality-check:
     name: Check Code Quality
     needs: run_or_skip_workflow
     if: ${{ needs.run_or_skip_workflow.outputs.run_workflow_flag == 'true' }}
     runs-on: ubuntu-latest
 
+    strategy:
+      max-parallel: 4
+
     # Steps represent a sequence of tasks that will be executed as part of the job
 
     steps:
+      - name: Install curl SSL library
+        run: |
+          sudo apt-get update && sudo apt-get install libcurl4-openssl-dev
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      # Run EsLint and Prettier check
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 16
+      #     cache: "npm"
+      #     cache-dependency-path: ./my-app/package-lock.json
+
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
+
       - name: Install NPM
-        working-directory: ./interstage_project/frontend
+        working-directory: ./my-app
         run: npm ci --force
 
       - name: Get changed .js files
@@ -40,28 +83,28 @@ jobs:
           files: |
             **/**.js
           # Only the files inside the path interstage_project will be included
-          path: "./interstage_project/frontend"
+          path: "./my-app"
 
       - name: Run Prettier on changed files
         if: steps.changed-js-files.outputs.any_changed == 'true'
-        working-directory: ./interstage_project/frontend
+        working-directory: ./my-app
         run: |
           npx prettier --check ${{ steps.changed-js-files.outputs.all_changed_files }}
 
       - name: Run Lint on changed files
         if: steps.changed-js-files.outputs.any_changed == 'true'
-        working-directory: ./interstage_project/frontend
+        working-directory: ./my-app
         run: |
           npx eslint ${{ steps.changed-js-files.outputs.all_changed_files }} --no-fix --max-warnings 0
 
       - name: Run Prettier across all files
         if: always()
-        working-directory: ./interstage_project/frontend
+        working-directory: ./my-app
         run: |
           npm run pretty:check
 
       - name: Run EsLint across all files
         if: always()
-        working-directory: ./interstage_project/frontend
+        working-directory: ./my-app
         run: |
           npx eslint src/ --no-fix --max-warnings 0
