@@ -67,7 +67,7 @@ jobs:
 
       - name: Install NPM
         working-directory: ./my-app
-        run: npm ci --force
+        run: npm ci
 
       - name: Get changed .js files
         id: changed-js-files
